@@ -1,4 +1,4 @@
-"""The shop's MongoDB Atlas database, shared by catalog-api and checkout-api.
+"""The shop's MongoDB Atlas database, shared by shop-catalog and shop-checkout.
 
 Opened on first use, after telemetry.setup(): the pymongo instrumentation only
 sees clients created once it is installed.

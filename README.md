@@ -37,7 +37,7 @@ The build delivers what the event page promises:
 
 ## The incident
 
-Storefront's checkout-api and catalog-api store their data in an Atlas M10 cluster with about 1.5M orders. Release
+Storefront's shop-checkout and shop-catalog store their data in an Atlas M10 cluster with about 1.5M orders. Release
 v4.1.0 has three commits, and one of them adds a query on `orders` that no index covers. Every checkout then scans the
 collection. Here is what each signal shows:
 

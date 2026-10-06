@@ -1,4 +1,4 @@
-"""storefront-web -- the customer-facing entry point."""
+"""shop-web -- the customer-facing entry point."""
 
 import logging
 import os
@@ -10,9 +10,9 @@ from fastapi.staticfiles import StaticFiles
 
 from services.common import telemetry
 
-app = FastAPI(title="storefront-web")
+app = FastAPI(title="shop-web")
 telemetry.setup(app)
-log = logging.getLogger("storefront-web")
+log = logging.getLogger("shop-web")
 
 CHECKOUT_URL = os.environ.get("CHECKOUT_URL", "http://checkout:8000")
 CATALOG_URL = os.environ.get("CATALOG_URL", "http://catalog:8000")

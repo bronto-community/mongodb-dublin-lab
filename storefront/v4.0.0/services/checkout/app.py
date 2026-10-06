@@ -1,4 +1,4 @@
-"""checkout-api -- turns a cart into a confirmed order."""
+"""shop-checkout -- turns a cart into a confirmed order."""
 
 import asyncio
 import datetime
@@ -12,9 +12,9 @@ from services.checkout import config
 from services.common import telemetry
 from services.common.db import db
 
-app = FastAPI(title="checkout-api")
+app = FastAPI(title="shop-checkout")
 telemetry.setup(app)
-log = logging.getLogger("checkout-api")
+log = logging.getLogger("shop-checkout")
 
 client = httpx.AsyncClient(
     timeout=config.PAYMENTS_TIMEOUT_S,

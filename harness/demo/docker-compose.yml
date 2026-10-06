@@ -9,6 +9,7 @@ x-service: &service
     OTEL_EXPORTER_OTLP_ENDPOINT: http://collector:4317
     OTEL_EXPORTER_OTLP_INSECURE: "true"
     GIT_REPO: https://github.com/bronto-community/storefront-mongo
+    OTEL_RESOURCE_ATTRIBUTES: service.namespace=storefront-dublin,deployment.environment=dublin-lab
     GIT_COMMIT: ${GIT_COMMIT:-unknown}
     SERVICE_VERSION: ${SERVICE_VERSION:-unknown}
   depends_on: [collector]
@@ -16,16 +17,16 @@ x-service: &service
 services:
   web:
     <<: *service
-    environment: { <<: *service-env, SERVICE_MODULE: services.web.app, SERVICE_NAME: storefront-web }
+    environment: { <<: *service-env, SERVICE_MODULE: services.web.app, SERVICE_NAME: shop-web }
   catalog:
     <<: *service
-    environment: { <<: *service-env, SERVICE_MODULE: services.catalog.app, SERVICE_NAME: catalog-api }
+    environment: { <<: *service-env, SERVICE_MODULE: services.catalog.app, SERVICE_NAME: shop-catalog }
   checkout:
     <<: *service
-    environment: { <<: *service-env, SERVICE_MODULE: services.checkout.app, SERVICE_NAME: checkout-api }
+    environment: { <<: *service-env, SERVICE_MODULE: services.checkout.app, SERVICE_NAME: shop-checkout }
   payments:
     <<: *service
-    environment: { <<: *service-env, SERVICE_MODULE: services.payments.app, SERVICE_NAME: payments-gateway }
+    environment: { <<: *service-env, SERVICE_MODULE: services.payments.app, SERVICE_NAME: shop-payments }
 
   # The external PSP: not ours, not instrumented. Answers in ~80 ms.
   psp:

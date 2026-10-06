@@ -1,8 +1,8 @@
-"""Runtime configuration for checkout-api."""
+"""Runtime configuration for shop-checkout."""
 
 import os
 
-# Outbound HTTP connection pool for the payments-gateway client.
+# Outbound HTTP connection pool for the shop-payments client.
 PAYMENTS_POOL_SIZE = int(os.environ.get("PAYMENTS_POOL_SIZE", "20"))
 
 PAYMENTS_URL = os.environ.get("PAYMENTS_URL", "http://payments:8000")

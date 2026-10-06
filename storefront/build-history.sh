@@ -17,8 +17,16 @@ git checkout -q -B main v3.1.0
 git remote set-url origin https://github.com/bronto-community/storefront-mongo.git
 git tag -d v3.2.0 >/dev/null
 
+# The lab's services are named shop-* so they never share a Bronto dataset with
+# the original Storefront (storefront-web, checkout-api, ...) in the same org.
+rename_services() {
+  grep -rlE 'storefront-web|checkout-api|payments-gateway|catalog-api' README.md services tests 2>/dev/null |
+    xargs perl -pi -e 's/storefront-web/shop-web/g; s/checkout-api/shop-checkout/g; s/payments-gateway/shop-payments/g; s/catalog-api/shop-catalog/g'
+}
+
 commit() { # author email date message overlay-dir
   cp -R "$here/$5/." .
+  [ "$5" = v4.0.0 ] && rename_services
   git add -A
   GIT_AUTHOR_NAME="$1" GIT_AUTHOR_EMAIL="$2" GIT_AUTHOR_DATE="$3" \
   GIT_COMMITTER_NAME="$1" GIT_COMMITTER_EMAIL="$2" GIT_COMMITTER_DATE="$3" \
@@ -28,8 +36,8 @@ commit() { # author email date message overlay-dir
 commit "Tomas Ek" tomas@storefront.example "2026-09-28T10:20:00+02:00" \
 "feat: move catalog and orders to MongoDB Atlas
 
-catalog-api reads the listing from the products collection and
-checkout-api writes every confirmed order to orders. Both trace their
+shop-catalog reads the listing from the products collection and
+shop-checkout writes every confirmed order to orders. Both trace their
 database calls (opentelemetry-instrumentation-pymongo), so a slow query
 shows up as a child span of the request.
 

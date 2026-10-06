@@ -285,7 +285,7 @@ count on orders.
 The trace tells you WHERE. Atlas tells you WHY: it scanned every order.
 Tonight's incident is exactly this. Don't give away which commit.
 
-Both are real traces from the harness (6 Oct). Across three hours: checkout-api
+Both are real traces from the harness (6 Oct). Across three hours: shop-checkout
 p50 117 ms -> 1,121 ms, p95 136 ms -> 3,351 ms; at the web tier p95 hits the
 5-second client timeout, so some checkouts fail outright.
 -->
@@ -352,7 +352,7 @@ Two Bronto orgs: theirs (they signed up before tonight) receives their agent's
 traces. Ours is the shared demo org with Storefront, read with a public
 read-only key: nobody logs in to it, the agent reads it.
 
-Storefront: a small shop. checkout-api and catalog-api on MongoDB Atlas.
+Storefront: a small shop. shop-checkout and shop-catalog on MongoDB Atlas.
 Tonight a release went out at 7:30 and checkout got slow.
 -->
 
@@ -579,8 +579,8 @@ header name and the endpoint. The agent sets the endpoint from BRONTO_REGION.
 <!--
 Bronto MCP: mcp.eu.bronto.io/mcp. Key is read-only and public on purpose.
 
-Typical answer: "checkout-api p95 went from ~140 ms to ~3.4 s around 7:30,
-something in checkout-api". Sometimes it blames catalog: catalog logs a noisy
+Typical answer: "shop-checkout p95 went from ~140 ms to ~3.4 s around 7:30,
+something in shop-checkout". Sometimes it blames catalog: catalog logs a noisy
 "cache miss" warning all the time. Good discussion point.
 -->
 

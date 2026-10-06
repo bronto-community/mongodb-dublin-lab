@@ -1,4 +1,4 @@
-"""catalog-api -- product listings."""
+"""shop-catalog -- product listings."""
 
 import logging
 import random
@@ -8,9 +8,9 @@ from fastapi import FastAPI
 from services.common import telemetry
 from services.common.db import db
 
-app = FastAPI(title="catalog-api")
+app = FastAPI(title="shop-catalog")
 telemetry.setup(app)
-log = logging.getLogger("catalog-api")
+log = logging.getLogger("shop-catalog")
 
 
 @app.on_event("startup")

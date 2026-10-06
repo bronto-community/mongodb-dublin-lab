@@ -2,24 +2,24 @@
 // One Storefront checkout as a span tree, before and after the v4.1.0 release.
 // Two real Storefront traces from the harness in Bronto, 6 Oct 2026:
 // v4.0.0 trace 19c2a332… (checkout p50 117 ms) and v4.1.0 trace ea3af037… (p50 1,121 ms).
-// The client span between web and checkout-api is left out; the PSP call is
-// payments-gateway's outbound POST (the PSP itself isn't instrumented).
+// The client span between web and shop-checkout is left out; the PSP call is
+// shop-payments's outbound POST (the PSP itself isn't instrumented).
 const props = withDefaults(defineProps<{ bad?: boolean }>(), { bad: false })
 
 const GOOD = [
-  { d: 0, name: 'POST /checkout', svc: 'storefront-web', ms: 121.3, tag: 'http' },
-  { d: 1, name: 'POST /checkout', svc: 'checkout-api', ms: 117.0, tag: 'http' },
-  { d: 2, name: 'POST /charge', svc: 'payments-gateway', ms: 106.4, tag: 'http' },
-  { d: 3, name: 'POST → PSP', svc: 'payments-gateway', ms: 83.7, tag: 'ext' },
-  { d: 2, name: 'storefront.insert · orders', svc: 'checkout-api', ms: 5.2, tag: 'db' },
+  { d: 0, name: 'POST /checkout', svc: 'shop-web', ms: 121.3, tag: 'http' },
+  { d: 1, name: 'POST /checkout', svc: 'shop-checkout', ms: 117.0, tag: 'http' },
+  { d: 2, name: 'POST /charge', svc: 'shop-payments', ms: 106.4, tag: 'http' },
+  { d: 3, name: 'POST → PSP', svc: 'shop-payments', ms: 83.7, tag: 'ext' },
+  { d: 2, name: 'storefront.insert · orders', svc: 'shop-checkout', ms: 5.2, tag: 'db' },
 ]
 const BAD = [
-  { d: 0, name: 'POST /checkout', svc: 'storefront-web', ms: 1154.1, tag: 'http' },
-  { d: 1, name: 'POST /checkout', svc: 'checkout-api', ms: 1149.8, tag: 'http' },
-  { d: 2, name: 'storefront.aggregate · orders', svc: 'checkout-api', ms: 1039.3, tag: 'db', err: true },
-  { d: 2, name: 'POST /charge', svc: 'payments-gateway', ms: 99.2, tag: 'http' },
-  { d: 3, name: 'POST → PSP', svc: 'payments-gateway', ms: 75.6, tag: 'ext' },
-  { d: 2, name: 'storefront.insert · orders', svc: 'checkout-api', ms: 5.6, tag: 'db' },
+  { d: 0, name: 'POST /checkout', svc: 'shop-web', ms: 1154.1, tag: 'http' },
+  { d: 1, name: 'POST /checkout', svc: 'shop-checkout', ms: 1149.8, tag: 'http' },
+  { d: 2, name: 'storefront.aggregate · orders', svc: 'shop-checkout', ms: 1039.3, tag: 'db', err: true },
+  { d: 2, name: 'POST /charge', svc: 'shop-payments', ms: 99.2, tag: 'http' },
+  { d: 3, name: 'POST → PSP', svc: 'shop-payments', ms: 75.6, tag: 'ext' },
+  { d: 2, name: 'storefront.insert · orders', svc: 'shop-checkout', ms: 5.6, tag: 'db' },
 ]
 const MAX = 1154.1
 </script>
