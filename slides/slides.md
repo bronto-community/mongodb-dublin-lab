@@ -67,7 +67,7 @@ layout: center
     <div class="stack">
       <div class="card">
         <b>Before</b>
-        <span>Your traces end at a span called <code>mongodb find</code>. Why it took 1.2 seconds lives in a different tool, with a different login, owned by a different team.</span>
+        <span>Your traces end at a span called <code>storefront.aggregate</code>. Why it took a second lives in a different tool, with a different login, owned by a different team.</span>
       </div>
       <div class="card mongo">
         <b>Atlas OTel Metrics Sink (GA)</b>
@@ -269,7 +269,7 @@ ones from rehearsal.
 <div class="cols even mt-6">
   <div class="card">
     <b>From the trace</b>
-    <span><code>db.system.name = mongodb</code>, the operation, the collection, and the duration of every database call, as a child span of the request.</span>
+    <span><code>db.system = mongodb</code>, <code>db.mongodb.collection</code>, <code>db.statement</code> and the duration of every database call, as a child span of the request.</span>
   </div>
   <div class="card mongo">
     <b>From Atlas</b>
@@ -278,14 +278,16 @@ ones from rehearsal.
 </div>
 
 <!--
-Click 0: a healthy checkout. 140 ms, mostly the payment provider.
-Click 1: after a release. Same request, 1.4 seconds, and nearly all of it is one
+Click 0: a healthy checkout on v4.0.0. 121 ms, mostly the payment provider.
+Click 1: the same request after v4.1.0. 1,154 ms, and 1,039 of it is one
 count on orders.
 
 The trace tells you WHERE. Atlas tells you WHY: it scanned every order.
 Tonight's incident is exactly this. Don't give away which commit.
 
-Numbers are illustrative until rehearsal; replace with a real trace.
+Both are real traces from the harness (6 Oct). Across three hours: checkout-api
+p50 117 ms -> 1,121 ms, p95 136 ms -> 3,351 ms; at the web tier p95 hits the
+5-second client timeout, so some checkouts fail outright.
 -->
 
 ---
@@ -577,7 +579,7 @@ header name and the endpoint. The agent sets the endpoint from BRONTO_REGION.
 <!--
 Bronto MCP: mcp.eu.bronto.io/mcp. Key is read-only and public on purpose.
 
-Typical answer: "checkout-api p95 went from ~140 ms to ~1.4 s around :30,
+Typical answer: "checkout-api p95 went from ~140 ms to ~3.4 s around 7:30,
 something in checkout-api". Sometimes it blames catalog: catalog logs a noisy
 "cache miss" warning all the time. Good discussion point.
 -->
@@ -616,7 +618,7 @@ EOF" />
 
 <div class="card hl">
 <b>What to notice</b>
-<span>Does it connect the slow <code>mongodb count</code> span to Atlas's numbers? Does it find the <code>COLLSCAN</code> slow-query line, and which collection and filter?</span>
+<span>Does it connect the slow <code>storefront.aggregate</code> span on <code>orders</code> to Atlas's numbers? Does it find the <code>COLLSCAN</code> slow-query line, and which collection and filter?</span>
 </div>
 
 <div class="card">

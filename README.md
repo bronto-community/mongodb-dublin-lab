@@ -43,7 +43,7 @@ collection. Here is what each signal shows:
 
 | Signal | What it shows |
 |---|---|
-| Traces | A slow `mongodb` child span under `POST /checkout` |
+| Traces | A slow `storefront.aggregate` span on `orders` under `POST /checkout` (about 1 s, up from 5 ms for the insert) |
 | Atlas metrics | Query targeting and operation latency jump |
 | Atlas logs | `Slow query … COLLSCAN` |
 | GitHub | The commit, with its misleading message |
@@ -119,5 +119,5 @@ Run each from `harness/` with `AWS_PROFILE=bronto`, after `aws sso login --profi
   - The relay accepts any OTLP encoding and keeps slow queries, warnings and errors.
   - Each record becomes its own event in `mongodb-dublin / atlas-mongod`, with `msg`, `attr.ns`, `attr.planSummary` and `attr.docsExamined` as fields.
   - Configure it through the Admin API (`PUT /groups/{id}/logIntegrations/{id}`, type `OTEL_LOG_EXPORT`). The UI's edit form re-sends the masked header value when it tests.
-- The numbers in `slides/components/IncidentTrace.vue` and on the GenAI vocabulary slide are illustrative. Replace them with a real trace after rehearsal.
+- The values on the GenAI vocabulary slide (model, tokens, tool name) are illustrative until the agent has run on Gemini against the incident. The checkout trace slide uses two real harness traces.
 - Load (`CHECKOUT_RPS`) and seed size (`SEED_ORDERS`): tune them so the bad release costs about 1 s per checkout without saturating the M10.

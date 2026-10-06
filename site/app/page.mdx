@@ -227,7 +227,7 @@ Add to the end of `my.md`:
 </Step>
 <Step n={11} title="Restart with AGENT_STEP=4 and ask" then="does it tie the slow checkout to the database, and say why?">
 
-Ask: **"Customers say checkout got slow tonight. Is it the database?"** Look for the slow `mongodb` span, Atlas's
+Ask: **"Customers say checkout got slow tonight. Is it the database?"** Look for the slow `storefront.aggregate` span on `orders`, Atlas's
 query targeting, and a `COLLSCAN` slow-query line.
 
 </Step>

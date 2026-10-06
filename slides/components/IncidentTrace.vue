@@ -1,24 +1,27 @@
 <script setup lang="ts">
 // One Storefront checkout as a span tree, before and after the v4.1.0 release.
-// Illustrative numbers: swap in a real trace from the harness after rehearsal.
+// Two real Storefront traces from the harness in Bronto, 6 Oct 2026:
+// v4.0.0 trace 19c2a332… (checkout p50 117 ms) and v4.1.0 trace ea3af037… (p50 1,121 ms).
+// The client span between web and checkout-api is left out; the PSP call is
+// payments-gateway's outbound POST (the PSP itself isn't instrumented).
 const props = withDefaults(defineProps<{ bad?: boolean }>(), { bad: false })
 
 const GOOD = [
-  { d: 0, name: 'POST /checkout', svc: 'storefront-web', ms: 142, tag: 'http' },
-  { d: 1, name: 'POST /checkout', svc: 'checkout-api', ms: 131, tag: 'http' },
-  { d: 2, name: 'POST /charge', svc: 'payments-gateway', ms: 112, tag: 'http' },
-  { d: 3, name: 'POST /authorize', svc: 'psp (external)', ms: 84, tag: 'ext' },
-  { d: 2, name: 'mongodb insert storefront.orders', svc: 'checkout-api', ms: 6, tag: 'db' },
+  { d: 0, name: 'POST /checkout', svc: 'storefront-web', ms: 121.3, tag: 'http' },
+  { d: 1, name: 'POST /checkout', svc: 'checkout-api', ms: 117.0, tag: 'http' },
+  { d: 2, name: 'POST /charge', svc: 'payments-gateway', ms: 106.4, tag: 'http' },
+  { d: 3, name: 'POST → PSP', svc: 'payments-gateway', ms: 83.7, tag: 'ext' },
+  { d: 2, name: 'storefront.insert · orders', svc: 'checkout-api', ms: 5.2, tag: 'db' },
 ]
 const BAD = [
-  { d: 0, name: 'POST /checkout', svc: 'storefront-web', ms: 1418, tag: 'http' },
-  { d: 1, name: 'POST /checkout', svc: 'checkout-api', ms: 1406, tag: 'http' },
-  { d: 2, name: 'mongodb count storefront.orders', svc: 'checkout-api', ms: 1268, tag: 'db', err: true },
-  { d: 2, name: 'POST /charge', svc: 'payments-gateway', ms: 114, tag: 'http' },
-  { d: 3, name: 'POST /authorize', svc: 'psp (external)', ms: 86, tag: 'ext' },
-  { d: 2, name: 'mongodb insert storefront.orders', svc: 'checkout-api', ms: 7, tag: 'db' },
+  { d: 0, name: 'POST /checkout', svc: 'storefront-web', ms: 1154.1, tag: 'http' },
+  { d: 1, name: 'POST /checkout', svc: 'checkout-api', ms: 1149.8, tag: 'http' },
+  { d: 2, name: 'storefront.aggregate · orders', svc: 'checkout-api', ms: 1039.3, tag: 'db', err: true },
+  { d: 2, name: 'POST /charge', svc: 'payments-gateway', ms: 99.2, tag: 'http' },
+  { d: 3, name: 'POST → PSP', svc: 'payments-gateway', ms: 75.6, tag: 'ext' },
+  { d: 2, name: 'storefront.insert · orders', svc: 'checkout-api', ms: 5.6, tag: 'db' },
 ]
-const MAX = 1418
+const MAX = 1154.1
 </script>
 
 <template>
@@ -27,14 +30,14 @@ const MAX = 1418
       <div class="label" :style="{ paddingLeft: r.d * 1.1 + 'rem' }"><span class="dot" />{{ r.name }}</div>
       <div class="svc">{{ r.svc }}</div>
       <div class="bar-wrap"><div class="bar" :style="{ width: Math.max(1, (r.ms / MAX) * 100) + '%' }" /></div>
-      <div class="ms">{{ r.ms.toLocaleString() }} ms</div>
+      <div class="ms">{{ r.ms.toLocaleString(undefined, { maximumFractionDigits: 1 }) }} ms</div>
     </div>
   </div>
 </template>
 
 <style scoped>
 .it { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.78rem; }
-.row { display: grid; grid-template-columns: 19rem 9rem 1fr 4.6rem; align-items: center; gap: 0.6rem; }
+.row { display: grid; grid-template-columns: 19rem 9rem 1fr 6rem; align-items: center; gap: 0.6rem; }
 .label { font-family: 'Geist Mono', monospace; white-space: nowrap; display: flex; align-items: center; gap: 0.45rem; overflow: hidden; }
 .svc { color: var(--ink-dim); white-space: nowrap; }
 .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--sapphire); }
@@ -46,5 +49,5 @@ const MAX = 1418
 .db .bar { background: #8FD6B8; }
 .err .bar { background: var(--claim); }
 .err .label { color: var(--claim); font-weight: 600; }
-.ms { font-family: 'Geist Mono', monospace; color: var(--ink-dim); text-align: right; }
+.ms { font-family: 'Geist Mono', monospace; color: var(--ink-dim); text-align: right; white-space: nowrap; }
 </style>
