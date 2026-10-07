@@ -39,6 +39,8 @@ docker pull ghcr.io/bronto-community/mongodb-lab-agent
 mkdir mongodb-lab && cd mongodb-lab
 ```
 
+Pulled it before tonight? Pull again: the image was updated on 7 October.
+
 </Step>
 <Step n={2} title="Create .env with your LLM key" then="the folder has a .env file.">
 
@@ -75,6 +77,7 @@ cat > my.md <<'EOF'
 - Answer in at most three bullet points.
 - End every answer with your confidence: low, medium or high.
 - Sign off as "your friendly on-call dino".
+- Use at most 10 tool calls per question, and keep searches to the time window you were asked about.
 EOF
 ```
 
@@ -86,6 +89,7 @@ EOF
 - Answer in at most three bullet points.
 - End every answer with your confidence: low, medium or high.
 - Sign off as "your friendly on-call dino".
+- Use at most 10 tool calls per question, and keep searches to the time window you were asked about.
 "@ | Set-Content -Encoding ascii my.md
 ```
 
@@ -147,10 +151,12 @@ Then ask **"Checkout is slow. What is wrong?"** It has no tools yet: it should s
 ## Step 2: trace it into your Bronto
 
 <Steps>
-<Step n={6} title="Add your Bronto ingestion key to .env" then="your .env has three more lines.">
+<Step n={6} title="Add your Bronto ingestion key to .env" then="your .env has four more lines.">
 
 `BRONTO_REGION` is `us` if your Bronto address is `app.us.bronto.io`. `ATTENDEE` is how you find your own traces:
-lowercase, no spaces.
+lowercase, no spaces. `WORKSHOP_INGEST_KEY` sends a copy of your agent's spans to the shared org, so the room's
+dashboard can show everyone's agents together. That copy has timings, models, tokens and tools, but not your prompts
+or answers. Leave the line out to opt out.
 
 <OSTabs>
 <Tab label="macOS / Linux">
@@ -160,6 +166,7 @@ cat >> .env <<'EOF'
 OTEL_EXPORTER_OTLP_HEADERS=x-bronto-api-key=YOUR-INGESTION-KEY
 BRONTO_REGION=eu
 ATTENDEE=yourname
+WORKSHOP_INGEST_KEY=a4060a2f-2bd1-4d14-ae3d-173366f46e55.s9JUDzbHrz4Au4GQhuJh6XvtahlSxHCAvjI3lU-K2iQ=
 EOF
 ```
 
@@ -171,6 +178,7 @@ EOF
 OTEL_EXPORTER_OTLP_HEADERS=x-bronto-api-key=YOUR-INGESTION-KEY
 BRONTO_REGION=eu
 ATTENDEE=yourname
+WORKSHOP_INGEST_KEY=a4060a2f-2bd1-4d14-ae3d-173366f46e55.s9JUDzbHrz4Au4GQhuJh6XvtahlSxHCAvjI3lU-K2iQ=
 "@ | Add-Content -Encoding ascii .env
 ```
 
@@ -183,6 +191,16 @@ ATTENDEE=yourname
 In Bronto, search the `ai-sre` service and open the newest trace: `invoke_agent` → `execute_event_loop_cycle` →
 `chat`. The model, and the input and output tokens, are on the `chat` span. Keep this tab open: every later step adds
 spans.
+
+Want a dashboard of your agent? Create an **API key** in your Bronto (Settings → API Keys, one that can write
+dashboards; an ingestion key gets a 403), then:
+
+```bash
+docker run --rm -e BRONTO_API_KEY=YOUR-API-KEY -e BRONTO_REGION=eu ghcr.io/bronto-community/mongodb-lab-agent python dashboard.py
+```
+
+It prints a link to "AI SRE agent — MongoDB Dublin lab": questions, answer time, tokens by model and step, tool calls
+and errors.
 
 </Step>
 </Steps>

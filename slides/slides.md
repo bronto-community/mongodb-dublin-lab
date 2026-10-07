@@ -13,8 +13,9 @@ class: text-left
 favicon: /favicon.ico
 fonts:
   sans: Radio Canada Big
-  serif: Source Serif 4
+  serif: Source Serif 4, IBM Plex Serif
   mono: Geist Mono
+  weights: '200,400,600,700'
 ---
 
 <div class="title-hero">
@@ -27,11 +28,16 @@ fonts:
 
 <div class="subtitle">From the model call to the database: what your AI system is really doing</div>
 
-<div class="track">Bronto × MongoDB · Dublin AI Week · 7 October 2026 · with Give(a)Go</div>
+<div class="logos">
+  <a href="https://bronto.io" target="_blank" rel="noopener"><img src="/img/bronto-logo.webp" alt="Bronto" class="lg-bronto" /></a>
+  <span class="x">×</span>
+  <a href="https://www.mongodb.com" target="_blank" rel="noopener"><img src="/img/logos/mongodb.svg" alt="MongoDB" class="lg-mongo" /></a>
+  <span class="sep" />
+  <a href="https://www.dublinaiweek.com" target="_blank" rel="noopener"><img src="/img/logos/dublin-ai-week.png" alt="Dublin AI Week" class="lg-week" /></a>
+  <a href="https://www.giveago.co" target="_blank" rel="noopener" class="lg-gag">Give(a)Go</a>
+</div>
 
-<a href="https://bronto.io" target="_blank" rel="noopener" class="abs-bl m-10 brand-logo-link">
-  <img src="/img/bronto-logo.webp" class="brand-logo" />
-</a>
+<div class="track">7 October 2026 · MongoDB Dublin</div>
 
 <style>
 .title-hero { position: relative; display: inline-block; }
@@ -40,12 +46,20 @@ fonts:
 .c-left { top: -100px; left: -60px; }
 .c-right { top: 50%; right: -132px; transform: translateY(-50%); }
 .subtitle { margin-top: 1.6rem; font-size: 1.3rem; color: var(--ink-dim); }
+.logos { display: flex; align-items: center; gap: 1.6rem; margin-top: 2.2rem; }
+.logos a { display: inline-flex; align-items: center; line-height: 0; }
+.logos .x { color: var(--ink-dim); font-size: 1.4rem; }
+.logos .sep { width: 1px; height: 2.4rem; background: var(--border); }
+.lg-bronto { height: 34px; width: auto; }
+.lg-mongo { height: 30px; width: auto; }
+/* The event's logo is white, for a dark site: shown in ink here */
+.lg-week { height: 52px; width: auto; filter: brightness(0) opacity(0.85); }
+/* Give(a)Go's wordmark is type, not an image: IBM Plex Serif Bold, as on giveago.co */
+.lg-gag { font-family: 'IBM Plex Serif', serif; font-weight: 700; font-size: 1.6rem; color: var(--ink); line-height: 1; }
 .track {
   margin-top: 1.2rem; font-family: 'Geist Mono', monospace; font-size: 0.8rem;
   text-transform: uppercase; letter-spacing: 0.14em; color: var(--sapphire);
 }
-.brand-logo { width: 150px; height: auto; }
-.brand-logo-link { display: inline-block; line-height: 0; }
 </style>
 
 <!--
@@ -106,7 +120,7 @@ Bronto is one.
 # How we wired it for tonight
 
 <div class="flow mt-6">
-  <div class="node mongo"><div class="i-lucide-database ico" /><b>Atlas M10</b><span>Storefront's products and 1.5M orders, eu-west-1</span></div>
+  <div class="node mongo"><div class="i-lucide-database ico" /><b>Atlas M10</b><span>Storefront's products and 1.3M orders, eu-west-1</span></div>
   <div class="arrow">→</div>
   <div class="node mongo"><div class="i-lucide-radio-tower ico" /><b>OTel Metrics Sink</b><span>MongoDB + hardware metrics, every minute</span></div>
   <div class="arrow">+</div>
@@ -120,9 +134,9 @@ Bronto is one.
     <b>The Bronto part of Harshit's form</b>
     <span>Endpoint <code>https://ingestion.eu.bronto.io/v1/metrics</code>, one header: <code>x-bronto-api-key</code>. On our M10, a point a minute; M40 and up get the ~10 s granularity Harshit mentioned.</span>
   </div>
-  <div class="card warn">
+  <div class="card">
     <b>The logs, too</b>
-    <span>Atlas's log export sends the mongod log over OTLP: every slow query, with its plan. About 1 GB per host per day, and it can contain PII.</span>
+    <span>Atlas's log export sends the mongod log over OTLP: every slow query, with its plan. About 1 GB per host per day.</span>
   </div>
 </div>
 
@@ -274,7 +288,7 @@ ones from rehearsal.
   </div>
   <div class="card mongo">
     <b>From Atlas</b>
-    <span>Database operations: query targeting jumps (documents scanned per document returned). Resource utilization: CPU climbs. Logs: <code>Slow query … planSummary: COLLSCAN, docsExamined: 1,500,000</code>.</span>
+    <span>Database operations: query targeting jumps (documents scanned per document returned). Resource utilization: CPU climbs. Logs: <code>Slow query … planSummary: COLLSCAN, docsExamined: 1,300,000</code>.</span>
   </div>
 </div>
 
@@ -283,15 +297,15 @@ Harshit's "anomaly correlation, shared spike" slide, made real: the app's spike
 and the database's spike, the same minutes.
 
 Click 0: a healthy checkout on v4.0.0. 121 ms, mostly the payment provider.
-Click 1: the same request after v4.1.0. 1,154 ms, and 1,039 of it is one
+Click 1: the same request after v4.1.0. 696 ms, and 557 of it is one
 count on orders.
 
 The trace tells you WHERE. Atlas tells you WHY: it scanned every order.
 Tonight's incident is exactly this. Don't give away which commit.
 
-Both are real traces from the harness (6 Oct). Across three hours: shop-checkout
-p50 117 ms -> 1,121 ms, p95 136 ms -> 3,351 ms; at the web tier p95 hits the
-5-second client timeout, so some checkouts fail outright.
+Both are real traces from the harness (6 and 7 Oct). shop-checkout p50 goes from
+about 120 ms to about 690 ms, p95 from about 135 ms to about 800 ms: every
+checkout pays for a scan of 1.3M orders.
 -->
 
 ---
@@ -328,7 +342,8 @@ p50 117 ms -> 1,121 ms, p95 136 ms -> 3,351 ms; at the web tier p95 hits the
 LIVE first; the screenshots are the fallback (click through them if the wifi
 or the login fails).
 
-Open, already logged in, time range "Last 3 hours":
+Open, already logged in, time range "Last 1 hour" and rollup 2m or more (at 1m
+the Atlas counter charts read 0: one sample per bucket, nothing to subtract):
   Storefront × Atlas — checkout  https://app.eu.bronto.io/dashboards/8017824d-fbc9-4009-9b1a-273e8879d98c
   Atlas — storefront (M10)       https://app.eu.bronto.io/dashboards/0c85ecbd-e615-424d-866d-9a2e7115f965
 
@@ -522,6 +537,7 @@ EOF" />
 - Answer in at most three bullet points.
 - End every answer with your confidence: low, medium or high.
 - Sign off as &quot;your friendly on-call dino&quot;.
+- Use at most 10 tool calls per question, and keep searches to the time window you were asked about.
 EOF" />
 
 <div class="hint">Every <code>.md</code> file in its <code>prompts/</code> folder becomes the system prompt. You'll mount this one in.</div>
@@ -593,8 +609,9 @@ Free Gemini keys: aistudio.google.com/apikey, sign in with a Google account,
 OTEL_EXPORTER_OTLP_HEADERS=x-bronto-api-key=YOUR-INGESTION-KEY
 BRONTO_REGION=eu
 ATTENDEE=yourname
+WORKSHOP_INGEST_KEY=a4060a2f-2bd1-4d14-ae3d-173366f46e55.s9JUDzbHrz4Au4GQhuJh6XvtahlSxHCAvjI3lU-K2iQ=
 EOF" />
-<div class="hint"><code>BRONTO_REGION</code> is <code>us</code> if your Bronto address is app.us.bronto.io.</div>
+<div class="hint"><code>BRONTO_REGION</code> is <code>us</code> if your Bronto address is app.us.bronto.io. <code>WORKSHOP_INGEST_KEY</code> copies your spans, without prompts or answers, to the room's shared dashboard.</div>
 
 <div class="n">Restart with <code>AGENT_STEP=2</code>, ask again</div>
 
@@ -615,7 +632,7 @@ EOF" />
 
 <div class="card">
 <b>Keep the tab open</b>
-<span>Every step from now on adds spans: MCP tool calls, the metrics tool, longer loops. Watch the input tokens grow.</span>
+<span>Every step from now on adds spans: MCP tool calls, the metrics tool, longer loops. Watch the input tokens grow. Want a dashboard of it? The guide has a one-line command.</span>
 </div>
 
 </div>
@@ -655,7 +672,7 @@ header name and the endpoint. The agent sets the endpoint from BRONTO_REGION.
 
 <div class="card hl">
 <b>What to notice</b>
-<span>It should find that checkout got slow. Does it say why? Look at the trace in your Bronto: how many MCP calls, how many tokens?</span>
+<span>It should find that checkout got slow, and which database call takes the time. Does it trust that? Look at the trace in your Bronto: how many MCP calls, how many tokens?</span>
 </div>
 
 <div class="card warn">
@@ -669,9 +686,12 @@ header name and the endpoint. The agent sets the endpoint from BRONTO_REGION.
 <!--
 Bronto MCP: mcp.eu.bronto.io/mcp. Key is read-only and public on purpose.
 
-Typical answer: "shop-checkout p95 went from ~140 ms to ~3.4 s around 7:30,
-something in shop-checkout". Sometimes it blames catalog: catalog logs a noisy
-"cache miss" warning all the time. Good discussion point.
+Typical answer: "shop-checkout p95 went from ~135 ms to ~800 ms around 7:30,
+and most of it is a storefront.aggregate on orders". Every MongoDB span carries
+the query in db.statement, so a good agent may already name the customer_email
+filter here (tested 7 Oct). That's fine: it's a guess from one side. Step 4
+adds the database's own evidence, step 6 the commit. Sometimes it blames
+catalog: catalog logs a noisy "cache miss" warning all the time.
 -->
 
 ---
@@ -703,7 +723,7 @@ EOF" />
 
 <div class="card mongo">
 <b>A new sense</b>
-<span>Two tools that call Bronto's metrics API: <code>list_atlas_metrics</code> and <code>query_atlas_metrics</code>. About 80 lines of Python.</span>
+<span>Three tools on Bronto's metrics API: <code>list_atlas_metrics</code>, <code>query_atlas_metrics</code> and <code>atlas_query_targeting</code> (documents scanned per document returned). About 150 lines of Python.</span>
 </div>
 
 <div class="card hl">
@@ -721,8 +741,9 @@ EOF" />
 
 <!--
 This is the "connect application signals with database metrics" step from the
-agenda. If someone's agent doesn't use the metrics tool, ask them to add "use
-query_atlas_metrics" to my.md: the tool description alone isn't always enough.
+agenda. If someone's agent doesn't use the metrics tools, ask them to add "use
+atlas_query_targeting" to my.md: the tool description alone isn't always enough.
+Tested 7 Oct: query targeting reads ~300 healthy, 5,000-12,000 on v4.1.0.
 -->
 
 ---
@@ -838,7 +859,7 @@ layout: center
 
 <!--
 Reveal: v4.1.0, "flag returning customers for the loyalty banner". A count on
-orders by customer_email; the index is on customer_id. COLLSCAN of 1.5M orders
+orders by customer_email; the index is on customer_id. COLLSCAN of 1.3M orders
 on every checkout. The fix: an index on customer_email, or count by id.
 -->
 

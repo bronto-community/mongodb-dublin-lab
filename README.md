@@ -37,13 +37,13 @@ The build delivers what the event page promises:
 
 ## The incident
 
-Storefront's shop-checkout and shop-catalog store their data in an Atlas M10 cluster with about 1.5M orders. Release
+Storefront's shop-checkout and shop-catalog store their data in an Atlas M10 cluster with about 1.3M orders. Release
 v4.1.0 has three commits, and one of them adds a query on `orders` that no index covers. Every checkout then scans the
 collection. Here is what each signal shows:
 
 | Signal | What it shows |
 |---|---|
-| Traces | A slow `storefront.aggregate` span on `orders` under `POST /checkout` (about 1 s, up from 5 ms for the insert) |
+| Traces | A slow `storefront.aggregate` span on `orders` under `POST /checkout` (about 0.55 s per checkout, against 5 ms for the insert) |
 | Atlas metrics | Query targeting and operation latency jump |
 | Atlas logs | `Slow query … COLLSCAN` |
 | GitHub | The commit, with its misleading message |
@@ -92,7 +92,7 @@ Dublin time, in the middle of step 5. Instead, switch the incident by hand from 
 
 | Dublin (IST) | UTC | Run | Effect |
 |---|---|---|---|
-| before 19:00 | before 18:00 | `./night.sh load 0.5` | 0.5 checkouts a second, so the bad release costs about 1 s per checkout. At 2, the M10 saturates within minutes and checkouts queue for minutes |
+| before 19:00 | before 18:00 | `./night.sh load 0.3` | 0.3 checkouts a second. The M10 is burstable: once its CPU credits run out, Atlas throttles it to about 20% (CPU steal ~80%), and at 0.5 or more the bad release tips into minutes-long queues within the hour |
 | 19:00 | 18:00 | `./night.sh baseline` | Hourly timers off, good release `v4.0.0` live. 19:00–19:30 is the quiet baseline |
 | 19:30 | 18:30 | `./night.sh release` | `v4.1.0` ships and checkout gets slow. Leave it running through the build |
 | after 20:45 | after 19:45 | `./night.sh restore` | Good release back, hourly timers on again |
@@ -117,6 +117,20 @@ BRONTO_API_KEY=... python3 harness/dashboards/create_dashboards.py --delete     
 
 Creating needs a key with dashboard write access; the public read-only key is enough for `--validate`. The IDs of what it created are in `harness/dashboards/state.json`.
 
+**The room's agents.** With `WORKSHOP_INGEST_KEY` in their `.env` (step 2), every attendee's agent sends its spans to
+their own Bronto in full, and a copy to the shared org without prompts, answers or tool results
+([`agent/workshop.py`](agent/workshop.py)). The copy lands in `.traces / ai-sre`, which the agent's prompt tells it to
+ignore, and without content, so one agent can't read another's conclusions. "AI SRE agents — the whole room" in the
+shared org is built from it by [`agent/dashboard.py`](agent/dashboard.py) (its IDs are in
+`harness/dashboards/agents/dashboard.json`). Attendees can run the same script against their own account:
+
+```bash
+docker run --rm -e BRONTO_API_KEY=THEIR-API-KEY -e BRONTO_REGION=eu ghcr.io/bronto-community/mongodb-lab-agent python dashboard.py
+```
+
+`WORKSHOP_INGEST_KEY` is the harness's ingestion key, published in the guide for the evening: rotate it afterwards
+(it also carries Storefront's telemetry, so update `harness/.env` and the Secrets Manager secret when you do).
+
 ## Provisioned (5 October)
 
 - **Atlas:** org "Stephen's Org", project `mongodb-dublin` (`6ac39bb035b2838e26badbdf`).
@@ -137,5 +151,6 @@ Creating needs a key with dashboard write access; the public read-only key is en
   - The relay accepts any OTLP encoding and keeps slow queries, warnings and errors.
   - Each record becomes its own event in `mongodb-dublin / atlas-mongod`, with `msg`, `attr.ns`, `attr.planSummary` and `attr.docsExamined` as fields.
   - Configure it through the Admin API (`PUT /groups/{id}/logIntegrations/{id}`, type `OTEL_LOG_EXPORT`). The UI's edit form re-sends the masked header value when it tests.
-- The values on the GenAI vocabulary slide (model, tokens, tool name) are illustrative until the agent has run on Gemini against the incident. The checkout trace slide uses two real harness traces.
-- Load (`CHECKOUT_RPS`) and seed size (`SEED_ORDERS`): tune them so the bad release costs about 1 s per checkout without saturating the M10.
+- The values on the GenAI vocabulary slide (model, tokens, tool name) are illustrative. The checkout trace slide uses two real harness traces.
+- End-to-end test, 7 Oct, gemini-3.8-flash, against the live incident: steps 1–6 all answer; step 6 names commit `46c63a30`. With the "at most 10 tool calls" rule in `my.md`, a step 4 question took 12 model calls, ~200k input tokens and 87 s; without it, 77 calls and millions of tokens. Every MongoDB span carries `db.statement`, so a good agent can name the `customer_email` filter as early as step 3.
+- Load (`CHECKOUT_RPS`) and seed size (`SEED_ORDERS`): 0.3 checkouts a second and 1.3M orders make the bad release cost about 0.6 s per checkout without draining the M10's CPU credits (7 Oct). `night.sh trim` brings orders back down as checkouts add to them.

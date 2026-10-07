@@ -1,7 +1,8 @@
 <script setup lang="ts">
 // One Storefront checkout as a span tree, before and after the v4.1.0 release.
-// Two real Storefront traces from the harness in Bronto, 6 Oct 2026:
-// v4.0.0 trace 19c2a332… (checkout p50 117 ms) and v4.1.0 trace ea3af037… (p50 1,121 ms).
+// Two real Storefront traces from the harness in Bronto: v4.0.0 trace 19c2a332… (6 Oct,
+// checkout p50 117 ms) and v4.1.0 trace f07e9fcc… (7 Oct 11:20 UTC, 1.3M orders, 0.3
+// checkouts/s; checkout p50 ~690 ms).
 // The client span between web and shop-checkout is left out; the PSP call is
 // shop-payments's outbound POST (the PSP itself isn't instrumented).
 const props = withDefaults(defineProps<{ bad?: boolean }>(), { bad: false })
@@ -14,14 +15,14 @@ const GOOD = [
   { d: 2, name: 'storefront.insert · orders', svc: 'shop-checkout', ms: 5.2, tag: 'db' },
 ]
 const BAD = [
-  { d: 0, name: 'POST /checkout', svc: 'shop-web', ms: 1154.1, tag: 'http' },
-  { d: 1, name: 'POST /checkout', svc: 'shop-checkout', ms: 1149.8, tag: 'http' },
-  { d: 2, name: 'storefront.aggregate · orders', svc: 'shop-checkout', ms: 1039.3, tag: 'db', err: true },
-  { d: 2, name: 'POST /charge', svc: 'shop-payments', ms: 99.2, tag: 'http' },
-  { d: 3, name: 'POST → PSP', svc: 'shop-payments', ms: 75.6, tag: 'ext' },
-  { d: 2, name: 'storefront.insert · orders', svc: 'shop-checkout', ms: 5.6, tag: 'db' },
+  { d: 0, name: 'POST /checkout', svc: 'shop-web', ms: 696.2, tag: 'http' },
+  { d: 1, name: 'POST /checkout', svc: 'shop-checkout', ms: 690.0, tag: 'http' },
+  { d: 2, name: 'storefront.aggregate · orders', svc: 'shop-checkout', ms: 557.2, tag: 'db', err: true },
+  { d: 2, name: 'POST /charge', svc: 'shop-payments', ms: 119.5, tag: 'http' },
+  { d: 3, name: 'POST → PSP', svc: 'shop-payments', ms: 96.7, tag: 'ext' },
+  { d: 2, name: 'storefront.insert · orders', svc: 'shop-checkout', ms: 5.8, tag: 'db' },
 ]
-const MAX = 1154.1
+const MAX = 696.2
 </script>
 
 <template>
