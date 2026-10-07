@@ -64,7 +64,9 @@ Don't share the details with attendees before 8:30. The speaker notes on slides 
 2. **Storefront repo:**
    - Run `sh storefront/build-history.sh /tmp/storefront-mongo`.
    - Push it to `bronto-community/storefront-mongo` with `git push -u origin main --tags`.
-3. **Harness:** run `set -a; . harness/.env; set +a`, then `harness/deploy.sh` with `MONGODB_URI` set.
+3. **Harness:** run `set -a; . harness/.env; set +a`, then `harness/deploy.sh` with `MONGODB_URI` set. A redeploy
+   rebuilds the instance's `.env` from Secrets Manager: run `./night.sh load 0.3` again afterwards, unless the secret
+   has `CHECKOUT_RPS=0.3`.
 4. **Shared demo org:** the EU org. Its public "ReadOnly" key has the Lab read (logs + metrics) role, so it covers both MCP and the metrics API.
 5. **Agent image:**
    ```bash
@@ -81,7 +83,8 @@ Approved guests get setup guidance before the event. Ask them to arrive with:
 - a Gemini API key
 - a Bronto account and its ingestion key
 - the `ai-sre-issues` repo and its token
-- `docker pull ghcr.io/bronto-community/mongodb-lab-agent` already done
+- `docker pull ghcr.io/bronto-community/mongodb-lab-agent` already done, and pulled **again** on the night: the image
+  was updated on 7 October (shared-org copy, step 4 metrics fix)
 
 **On the night**
 
@@ -98,7 +101,14 @@ Dublin time, in the middle of step 5. Instead, switch the incident by hand from 
 | after 20:45 | after 19:45 | `./night.sh restore` | Good release back, hourly timers on again |
 
 Run each from `harness/` with `AWS_PROFILE=bronto`, after `aws sso login --profile bronto`.
-`./night.sh status` shows which release is live and the timers.
+`./night.sh status` shows which release is live, the timers and the load.
+
+**Before the talk (6:55)**, for the live demo on slides 9 and 10:
+
+- Open both dashboards, logged in to the shared org, at "Last 1 hour" and a rollup of 2 minutes or more (at 1 minute
+  the Atlas counter charts read 0). The hourly incident is live from 18:15 to 19:00 Dublin time.
+- Claude Desktop with the Bronto connector on the shared org, a fresh chat, the three questions from slide 10 ready.
+- The deck's backup screenshots are in `slides/public/img/demo/`; the Claude ones are `claude-1..3.png`.
 
 ## Dashboards
 
@@ -145,11 +155,12 @@ docker run --rm -e BRONTO_API_KEY=THEIR-API-KEY -e BRONTO_REGION=eu ghcr.io/bron
   - `dashboards_read` is what Bronto checks for `GET /metrics` and `POST /timeseries/search`; Bronto has no metrics permission of its own.
   - MCP still works with it.
 
-## Open questions
+## Notes and open questions
 
-- **Atlas log export goes through the harness relay.** Bronto's `/v1/logs` accepts only an exact `application/x-protobuf` or `application/json` Content-Type. Bronto's base endpoint stores a whole OTLP batch as one flattened event, and Atlas's scheduled exports never arrived there anyway: only its tests did.
-  - The relay accepts any OTLP encoding and keeps slow queries, warnings and errors.
-  - Each record becomes its own event in `mongodb-dublin / atlas-mongod`, with `msg`, `attr.ns`, `attr.planSummary` and `attr.docsExamined` as fields.
+- **Atlas log export goes through the harness relay** (Caddy → Collector → Bronto `/v1/logs`).
+  - What Atlas sends (Caddy's log, 7 Oct, 3 hours): OTLP/HTTP **JSON**, `POST /v1/logs`, `Content-Type: application/json`, no compression, user agent `Java-http-client/11.0.18`, about 3 posts a minute of 7.6–575 KB (median 66 KB), from AWS us-east-1 addresses although the cluster is in eu-west-1. All 200; the Collector logged no errors.
+  - Each record's body is one mongod JSON log line. The Collector parses it into fields and keeps slow queries, warnings and errors, so each becomes one event in `mongodb-dublin / atlas-mongod` with `msg`, `attr.ns`, `attr.planSummary` and `attr.docsExamined`. Without the relay Bronto would get about 1 GB per node per day of unparsed lines.
+  - When the relay was built (5–6 Oct), Atlas's scheduled exports never arrived at Bronto's endpoint directly, only its tests did, and Bronto's `/v1/logs` accepts only an exact `application/json` or `application/x-protobuf` Content-Type. Atlas now sends exactly `application/json`, so a direct export may work: untested, and it would lose the parsing and filtering.
   - Configure it through the Admin API (`PUT /groups/{id}/logIntegrations/{id}`, type `OTEL_LOG_EXPORT`). The UI's edit form re-sends the masked header value when it tests.
 - The values on the GenAI vocabulary slide (model, tokens, tool name) are illustrative. The checkout trace slide uses two real harness traces.
 - End-to-end test, 7 Oct, gemini-3.8-flash, against the live incident: steps 1–6 all answer; step 6 names commit `46c63a30`. With the "at most 10 tool calls" rule in `my.md`, a step 4 question took 12 model calls, ~200k input tokens and 87 s; without it, 77 calls and millions of tokens. Every MongoDB span carries `db.statement`, so a good agent can name the `customer_email` filter as early as step 3.
