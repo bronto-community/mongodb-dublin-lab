@@ -51,6 +51,9 @@ fonts:
 <!--
 Up while Harshit wraps. One line on who you are.
 
+Handover line: "Harshit just sent Atlas's metrics to [his backend]. Same sink,
+one more endpoint: let me show you what it looks like next to an AI app's traces."
+
 Shape of the next 95 minutes: 20 minutes of talk, then we build. Laptops can
 stay closed for now; open them when the QR code comes up.
 -->
@@ -61,23 +64,20 @@ layout: center
 
 <div class="bridge">
   <div class="kicker">Picking up from Harshit</div>
-  <h1 class="bh">The database was the blind spot.</h1>
+  <h1 class="bh">Same sink. One more endpoint.</h1>
 
   <div class="cols even">
     <div class="stack">
-      <div class="card">
-        <b>Before</b>
-        <span>Your traces end at a span called <code>storefront.aggregate</code>. Why it took a second lives in a different tool, with a different login, owned by a different team.</span>
-      </div>
-      <div class="card mongo">
-        <b>Atlas OTel Metrics Sink (GA)</b>
-        <span>Atlas pushes cluster metrics over OTLP to any OpenTelemetry backend. M10 and up. Atlas Log Integration ships the mongod logs too.</span>
-      </div>
+      <div class="n">Harshit's three questions, from the app's side</div>
+      <div class="card"><b>Cost</b><span>Tokens in and out of every model call: <code>gen_ai.usage.*</code> on the span.</span></div>
+      <div class="card"><b>Quality</b><span>What the tools retrieved, and from where. Often a database query.</span></div>
+      <div class="card"><b>Latency</b><span>The span tree: model, tools, and the database call under them.</span></div>
     </div>
     <div class="stack">
+      <div class="n">His single pane of glass, in Bronto</div>
       <div class="card hl">
-        <b>Tonight</b>
-        <span>Storefront's traces, its logs, and its Atlas cluster's metrics and slow-query logs all land in one Bronto org. One query language, one timeline.</span>
+        <b>One org, one timeline</b>
+        <span>Storefront's traces, Atlas's metrics from the sink, and the mongod slow-query log. One query language.</span>
       </div>
       <div class="card">
         <b>Why it matters for AI</b>
@@ -93,11 +93,12 @@ layout: center
 </style>
 
 <!--
-Harshit showed you the why; I'll show you the wiring in a minute, and then you
-use it.
+Harshit showed the why and the sink. Don't re-explain push vs pull. Point back
+to his three pillars (token cost, useful context, response time): those are the
+three things the rest of this talk measures.
 
-The MongoDB post is "Close the database blind spot with Atlas observability".
-The key line: Atlas metrics go to any OTLP-compatible backend. Bronto is one.
+The key line from MongoDB: Atlas metrics go to any OTLP-compatible backend.
+Bronto is one.
 -->
 
 ---
@@ -116,19 +117,19 @@ The key line: Atlas metrics go to any OTLP-compatible backend. Bronto is one.
 
 <div class="cols even mt-8">
   <div class="card">
-    <b>Configuration</b>
-    <span>Project → Integrations → OpenTelemetry. Endpoint <code>https://ingestion.eu.bronto.io/v1/metrics</code>, one header: <code>x-bronto-api-key</code>. Atlas sends a test metric the moment you save. Also scriptable through the Admin API.</span>
+    <b>The Bronto part of Harshit's form</b>
+    <span>Endpoint <code>https://ingestion.eu.bronto.io/v1/metrics</code>, one header: <code>x-bronto-api-key</code>. On our M10, a point a minute; M40 and up get the ~10 s granularity Harshit mentioned.</span>
   </div>
   <div class="card warn">
-    <b>What to know</b>
-    <span>M10 and up. TLS with a public CA (Bronto's ingestion endpoint qualifies). Logs: about 1 GB per host per day, and they can contain PII.</span>
+    <b>The logs, too</b>
+    <span>Atlas's log export sends the mongod log over OTLP: every slow query, with its plan. About 1 GB per host per day, and it can contain PII.</span>
   </div>
 </div>
 
 <!--
-No collector in between: Atlas pushes straight to Bronto with the key in a
-header. The metrics integration took one Admin API call; the log export is a
-form in the Atlas UI.
+Harshit showed the configuration form; don't repeat it. No collector in between
+for metrics: Atlas pushes straight to Bronto with the key in a header. The log
+export goes through a small relay on the harness (see README).
 -->
 
 ---
@@ -253,7 +254,7 @@ ones from rehearsal.
   <div class="card mongo"><b>The dependency underneath</b><span>The tool is fine; the query behind it isn't. Slow database, slow agent, slow everything.</span></div>
 </div>
 
-<div class="lede mt-8">The first three are visible in the agent's own trace. The fourth needs the database's signals next to it. That's the gap Harshit just closed.</div>
+<div class="lede mt-8">Harshit's latency, cost and quality, seen from the agent's side. The first three are visible in the agent's own trace. The fourth needs the database's signals next to it. That's the gap Harshit just closed.</div>
 
 <style>
 .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.8rem; }
@@ -273,11 +274,14 @@ ones from rehearsal.
   </div>
   <div class="card mongo">
     <b>From Atlas</b>
-    <span>Metrics: query targeting jumps (documents scanned per document returned), op latency and CPU climb. Logs: <code>Slow query … planSummary: COLLSCAN, docsExamined: 1,500,000</code>.</span>
+    <span>Database operations: query targeting jumps (documents scanned per document returned). Resource utilization: CPU climbs. Logs: <code>Slow query … planSummary: COLLSCAN, docsExamined: 1,500,000</code>.</span>
   </div>
 </div>
 
 <!--
+Harshit's "anomaly correlation, shared spike" slide, made real: the app's spike
+and the database's spike, the same minutes.
+
 Click 0: a healthy checkout on v4.0.0. 121 ms, mostly the payment provider.
 Click 1: the same request after v4.1.0. 1,154 ms, and 1,039 of it is one
 count on orders.
@@ -288,6 +292,92 @@ Tonight's incident is exactly this. Don't give away which commit.
 Both are real traces from the harness (6 Oct). Across three hours: shop-checkout
 p50 117 ms -> 1,121 ms, p95 136 ms -> 3,351 ms; at the web tier p95 hits the
 5-second client timeout, so some checkouts fail outright.
+-->
+
+---
+
+# Live: the same minutes, in Bronto
+
+<div class="live">
+  <div class="stack">
+    <div class="beat"><b>1</b><span><b>Checkout</b>: latency, requests, and the release that went out. The step is the deploy.</span></div>
+    <div class="beat"><b>2</b><span><b>MongoDB calls from checkout</b>: one operation, on <code>orders</code>, takes the time.</span></div>
+    <div class="beat mongo"><b>3</b><span><b>Atlas, from the sink</b>: query targeting goes from tens to thousands of documents scanned per document returned.</span></div>
+    <div class="beat mongo"><b>4</b><span><b>The mongod log</b>: slow queries on <code>storefront.orders</code>, plan <code>COLLSCAN</code>.</span></div>
+    <div class="hint">Dashboards: "Storefront × Atlas — checkout", and "Atlas — storefront (M10)" for Atlas's own charts.</div>
+  </div>
+  <div class="shots">
+    <DemoShot v-if="$clicks === 0" src="/img/demo/dash-checkout.png" caption="Storefront × Atlas — checkout" />
+    <DemoShot v-else-if="$clicks === 1" src="/img/demo/query-targeting.png" caption="Atlas query targeting, next to checkout latency" />
+    <DemoShot v-else-if="$clicks === 2" src="/img/demo/slow-queries.png" caption="atlas-mongod: slow queries by namespace and plan" />
+    <DemoShot v-else src="/img/demo/dash-atlas.png" caption="Atlas — storefront (M10): the Metrics tab, in Bronto" />
+  </div>
+</div>
+<div v-click="1" /><div v-click="2" /><div v-click="3" />
+
+<style>
+.live { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 1.8rem; margin-top: 1rem; align-items: start; }
+.beat { display: flex; gap: 0.7rem; align-items: baseline; font-size: 0.92rem; line-height: 1.4; }
+.beat > b { font-family: 'Geist Mono', monospace; color: var(--sapphire); }
+.beat.mongo > b { color: #00684A; }
+.beat span { color: var(--ink-dim); }
+.beat span b { color: var(--ink); }
+</style>
+
+<!--
+LIVE first; the screenshots are the fallback (click through them if the wifi
+or the login fails).
+
+Open, already logged in, time range "Last 3 hours":
+  Storefront × Atlas — checkout  https://app.eu.bronto.io/dashboards/8017824d-fbc9-4009-9b1a-273e8879d98c
+  Atlas — storefront (M10)       https://app.eu.bronto.io/dashboards/0c85ecbd-e615-424d-866d-9a2e7115f965
+
+The hourly incident runs :15 to :00 (v4.1.0 at :15, rollback at :00), so at
+6:55 there are several bad hours in view, and one is still live until 19:00,
+when night.sh baseline runs.
+
+Stop at the database. Say "a COLLSCAN on orders", not which field or which
+commit: that's what their agent finds in steps 4 to 6.
+-->
+
+---
+
+# Ask Claude: the Bronto MCP server
+
+<div class="cols even">
+  <div class="stack">
+    <div class="n">Claude, with the Bronto connector. Typed live:</div>
+    <div class="q"><span>1</span>Which Storefront services got slower in the last hour, compared with the hour before?</div>
+    <div class="q"><span>2</span>For shop-checkout, where is the time going? Show me the slowest span.</div>
+    <div class="q"><span>3</span>Anything in the Atlas mongod logs that explains it?</div>
+    <div class="card warn mt-2">
+      <b>What it can't see</b>
+      <span>Bronto MCP reads logs and traces: not Atlas's metrics, and not the code. Tonight you add both, in steps 4 and 6.</span>
+    </div>
+  </div>
+  <div>
+    <DemoShot v-if="$clicks === 0" src="/img/demo/claude-1.png" caption="Question 1" />
+    <DemoShot v-else-if="$clicks === 1" src="/img/demo/claude-2.png" caption="Question 2" />
+    <DemoShot v-else src="/img/demo/claude-3.png" caption="Question 3" />
+  </div>
+</div>
+<div v-click="1" /><div v-click="2" />
+
+<style>
+.q { display: flex; gap: 0.7rem; font-size: 1.05rem; line-height: 1.35; color: var(--ink); }
+.q span { font-family: 'Geist Mono', monospace; color: var(--sapphire); }
+</style>
+
+<!--
+LIVE in Claude Desktop with the Bronto connector, signed in to the shared demo
+org. Fresh chat, one question at a time. Screenshots are the fallback.
+
+The point isn't the answer, it's the shape: a model, tools that read
+telemetry, a loop. That's an AI SRE, and it's what you'll build. It will find
+the slow orders query and the COLLSCAN. It can't say why the index is missing:
+it can't read the code. That's step 6.
+
+If it starts reaching for GitHub or naming a commit, move on.
 -->
 
 ---
