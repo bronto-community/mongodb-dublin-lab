@@ -16,7 +16,8 @@ Atlas sends serverStatus counters (opcounters, documents scanned and returned, n
 ever-growing gauges, and Bronto has no derivative function. So a counter is two queries, MAX and MIN
 of the same series per time bucket, and a formula takes the difference: the increase within the
 bucket. It slightly under-counts (the step between buckets is lost), which cancels out in a ratio
-like query targeting. Counters are read on the primary only.
+like query targeting. Counters are read on the primary only. Atlas sends a point a minute,
+so view them with a rollup of 2 minutes or more: a 1-minute bucket holds one sample and reads 0.
 """
 
 from __future__ import annotations

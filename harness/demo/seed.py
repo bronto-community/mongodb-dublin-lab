@@ -1,4 +1,4 @@
-"""Fill the shop's database once: 40 products and ~1.5M past orders.
+"""Fill the shop's database once: 40 products and ~1.3M past orders.
 
 The orders are what make a missing index hurt: a query that can't use one
 scans all of them. Safe to re-run; it tops up to the target and stops.
@@ -12,7 +12,7 @@ import uuid
 from pymongo import MongoClient
 
 db = MongoClient(os.environ["MONGODB_URI"])[os.environ.get("MONGODB_DB", "storefront")]
-TARGET = int(os.environ.get("SEED_ORDERS", "1500000"))
+TARGET = int(os.environ.get("SEED_ORDERS", "1300000"))
 CUSTOMERS = int(os.environ.get("SEED_CUSTOMERS", "50000"))
 
 if db.products.estimated_document_count() == 0:

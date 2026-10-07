@@ -5,7 +5,8 @@
 #   AWS_PROFILE=bronto ./night.sh release    # 19:30 Dublin: ship v4.1.0, checkout gets slow
 #   AWS_PROFILE=bronto ./night.sh restore    # after 20:45 Dublin: good release, hourly timers back on
 #   AWS_PROFILE=bronto ./night.sh status     # which release is live, and the timers
-#   AWS_PROFILE=bronto ./night.sh load 0.5   # checkouts per second (CHECKOUT_RPS), restarts only the load generator
+#   AWS_PROFILE=bronto ./night.sh load 0.3   # checkouts per second (CHECKOUT_RPS), restarts only the load generator
+#   AWS_PROFILE=bronto ./night.sh trim 1300000  # delete the oldest orders down to this count (demo/trim.py)
 #
 # The instance runs on UTC; Dublin in October is Irish Standard Time, UTC+1.
 set -eu
@@ -21,7 +22,13 @@ case "${1:-}" in
     rps=${2:?usage: $0 load <checkouts per second>}
     case $rps in *[!0-9.]*|'') echo "not a number: $rps" >&2; exit 2 ;; esac
     cmd="cd /opt/lab/demo && sed -i /^CHECKOUT_RPS=/d .env && echo CHECKOUT_RPS=$rps >> .env && docker compose up -d --no-deps --force-recreate loadgen && grep ^CHECKOUT_RPS= .env" ;;
-  *) echo "usage: $0 baseline|release|restore|status|load <rps>" >&2; exit 2 ;;
+  trim)
+    n=${2:?usage: $0 trim <orders to keep>}
+    case $n in *[!0-9]*|'') echo "not a number: $n" >&2; exit 2 ;; esac
+    # trim.py isn't in the deployed bundle until the next deploy.sh, so it travels with the command.
+    script=$(base64 < "$(dirname "$0")/demo/trim.py" | tr -d '\n')
+    cmd="cd /opt/lab/demo && echo $script | base64 -d > trim.py && docker run --rm --env-file .env -e SEED_ORDERS=$n -v /opt/lab/demo/trim.py:/trim.py:ro python:3.12-slim sh -c 'pip install -q pymongo==4.15.1 && python /trim.py'" ;;
+  *) echo "usage: $0 baseline|release|restore|status|load <rps>|trim <orders>" >&2; exit 2 ;;
 esac
 
 instance=$(aws cloudformation describe-stacks --region "$REGION" --stack-name "$STACK" \

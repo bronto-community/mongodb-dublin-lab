@@ -25,5 +25,5 @@ bucket=$(out HarnessBucket)
 aws s3 cp --region "$REGION" "$tmp/harness.tgz" "s3://$bucket/harness.tgz"
 aws s3 cp --region "$REGION" bootstrap.sh "s3://$bucket/bootstrap.sh"
 echo "Stack $STACK in $REGION: instance $(out InstanceId), public IP $(out PublicIp)"
-echo "First boot takes ~20 min (seeding 1.5M orders, image builds). Watch it with:"
+echo "First boot takes ~20 min (seeding 1.3M orders, image builds). Watch it with:"
 echo "  aws ssm start-session --region $REGION --target $(out InstanceId)"
