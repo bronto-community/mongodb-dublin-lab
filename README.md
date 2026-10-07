@@ -2,6 +2,8 @@
 
 AQ.Ab8RN6LlD771A6chIQ_4jFYTpwEtT6urKPp72xqZ7esnMRRhQA
 
+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
+
 
 Bronto's talk and guided build at **MongoDB Dublin** (Building 2, 1 Ballsbridge, Shelbourne Road, Dublin 4) for
 Dublin AI Week, hosted by Give(a)Go, on **Wednesday 7 October 2026**. Event page: <https://luma.com/observability>.
