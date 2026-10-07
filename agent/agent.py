@@ -24,7 +24,10 @@ if STEP >= 2 and os.environ.get("OTEL_EXPORTER_OTLP_HEADERS"):
     region = os.environ.get("BRONTO_REGION", "eu").strip().lower() or "eu"
     os.environ.setdefault("OTEL_EXPORTER_OTLP_ENDPOINT", f"https://ingestion.{region}.bronto.io")
     from strands.telemetry import StrandsTelemetry
-    StrandsTelemetry().setup_otlp_exporter()
+    telemetry = StrandsTelemetry().setup_otlp_exporter()
+    if os.environ.get("WORKSHOP_INGEST_KEY"):
+        from workshop import shared_exporter
+        telemetry.tracer_provider.add_span_processor(shared_exporter(os.environ["WORKSHOP_INGEST_KEY"]))
 # #endregion trace
 
 import httpx2
@@ -73,8 +76,8 @@ def tools() -> list:
     if STEP >= 3:
         found.append(bronto)
     if STEP >= 4:
-        from atlas_metrics import list_atlas_metrics, query_atlas_metrics
-        found += [list_atlas_metrics, query_atlas_metrics]
+        from atlas_metrics import atlas_query_targeting, list_atlas_metrics, query_atlas_metrics
+        found += [list_atlas_metrics, query_atlas_metrics, atlas_query_targeting]
     if STEP >= 6:
         found.append(github)
     return found
@@ -83,6 +86,8 @@ def tools() -> list:
 # #region mouth
 # The mouth: the hypothesis goes where humans already look, as a GitHub issue.
 def file_issue(question: str, hypothesis: str) -> str:
+    if not os.environ.get("GITHUB_REPO"):  # no repo yet: show the issue it would file
+        return f"(no GITHUB_REPO set, so not filed)\n\n# [investigation] {question}\n\n{hypothesis}"
     r = httpx2.post(
         f"https://api.github.com/repos/{os.environ['GITHUB_REPO']}/issues",
         headers={"Authorization": f"Bearer {os.environ['GITHUB_TOKEN']}"},
@@ -97,6 +102,8 @@ def file_issue(question: str, hypothesis: str) -> str:
 def answer(result, reasoning: bool) -> str:
     """Some models write their reasoning into the answer. Drop it unless asked."""
     text = str(result).strip()
+    if not text:  # e.g. the model tried to call a tool it doesn't have, then stopped
+        return "(The model ended without an answer. Ask again, or look at its trace to see what it tried.)"
     if reasoning or not text.startswith("<reasoning>"):
         return text
     if re.search(r"</(reasoning|analysis)>?", text):
