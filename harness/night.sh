@@ -5,6 +5,7 @@
 #   AWS_PROFILE=bronto ./night.sh release    # 19:30 Dublin: ship v4.1.0, checkout gets slow
 #   AWS_PROFILE=bronto ./night.sh restore    # after 20:45 Dublin: good release, hourly timers back on
 #   AWS_PROFILE=bronto ./night.sh status     # which release is live, and the timers
+#   AWS_PROFILE=bronto ./night.sh load 0.5   # checkouts per second (CHECKOUT_RPS), restarts only the load generator
 #
 # The instance runs on UTC; Dublin in October is Irish Standard Time, UTC+1.
 set -eu
@@ -15,8 +16,12 @@ case "${1:-}" in
   baseline) cmd='systemctl stop storefront-release.timer storefront-rollback.timer && make -C /opt/lab/demo rollback' ;;
   release)  cmd='make -C /opt/lab/demo release' ;;
   restore)  cmd='make -C /opt/lab/demo rollback && systemctl start storefront-rollback.timer storefront-release.timer' ;;
-  status)   cmd='git -C /opt/lab/storefront describe --tags; systemctl list-timers storefront-* --no-pager' ;;
-  *) echo "usage: $0 baseline|release|restore|status" >&2; exit 2 ;;
+  status)   cmd='git -C /opt/lab/storefront describe --tags; systemctl list-timers storefront-* --no-pager; grep -E ^CHECKOUT_RPS= /opt/lab/demo/.env || echo CHECKOUT_RPS unset, loadgen default' ;;
+  load)
+    rps=${2:?usage: $0 load <checkouts per second>}
+    case $rps in *[!0-9.]*|'') echo "not a number: $rps" >&2; exit 2 ;; esac
+    cmd="cd /opt/lab/demo && sed -i /^CHECKOUT_RPS=/d .env && echo CHECKOUT_RPS=$rps >> .env && docker compose up -d --no-deps --force-recreate loadgen && grep ^CHECKOUT_RPS= .env" ;;
+  *) echo "usage: $0 baseline|release|restore|status|load <rps>" >&2; exit 2 ;;
 esac
 
 instance=$(aws cloudformation describe-stacks --region "$REGION" --stack-name "$STACK" \

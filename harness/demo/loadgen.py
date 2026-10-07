@@ -7,7 +7,7 @@ import random
 import httpx
 
 WEB = os.environ.get("WEB_URL", "http://web:8000")
-CHECKOUT_RPS = float(os.environ.get("CHECKOUT_RPS", "2"))
+CHECKOUT_RPS = float(os.environ.get("CHECKOUT_RPS", "0.5"))
 BROWSE_RPS = float(os.environ.get("BROWSE_RPS", "6"))
 CUSTOMERS = int(os.environ.get("SEED_CUSTOMERS", "50000"))
 

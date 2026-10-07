@@ -13,10 +13,10 @@ Dublin AI Week, hosted by Give(a)Go, on **Wednesday 7 October 2026**. Event page
 | 6:00 | Doors, food, networking | title slide up |
 | 6:30 | Welcome and build-session briefing (Give(a)Go) | |
 | 6:40 | Harshit Mehta, MongoDB: "AI Observability in Action: MongoDB Atlas OTel Metrics Sink" (talk only) | |
-| 6:55 | **Bronto talk**, 20 min | slides 1–11 |
-| 7:15 | **Guided build**, 75 min: setup + six steps | slides 12–19 |
-| 8:30 | Builds, lessons and questions | slide 20 |
-| 8:45 | Food and networking; 9:00 close | slide 21 |
+| 6:55 | **Bronto talk**, 20 min, with a live Bronto + Claude demo | slides 1–13 |
+| 7:15 | **Guided build**, 75 min: setup + six steps | slides 14–21 |
+| 8:30 | Builds, lessons and questions | slide 22 |
+| 8:45 | Food and networking; 9:00 close | slide 23 |
 
 The build delivers what the event page promises:
 
@@ -48,7 +48,7 @@ collection. Here is what each signal shows:
 | Atlas logs | `Slow query … COLLSCAN` |
 | GitHub | The commit, with its misleading message |
 
-Don't share the details with attendees before 8:30. The speaker notes on slides 19–20 have the answer.
+Don't share the details with attendees before 8:30. The speaker notes on slides 21–22 have the answer.
 
 ### Organiser checklist
 
@@ -92,12 +92,30 @@ Dublin time, in the middle of step 5. Instead, switch the incident by hand from 
 
 | Dublin (IST) | UTC | Run | Effect |
 |---|---|---|---|
+| before 19:00 | before 18:00 | `./night.sh load 0.5` | 0.5 checkouts a second, so the bad release costs about 1 s per checkout. At 2, the M10 saturates within minutes and checkouts queue for minutes |
 | 19:00 | 18:00 | `./night.sh baseline` | Hourly timers off, good release `v4.0.0` live. 19:00–19:30 is the quiet baseline |
 | 19:30 | 18:30 | `./night.sh release` | `v4.1.0` ships and checkout gets slow. Leave it running through the build |
 | after 20:45 | after 19:45 | `./night.sh restore` | Good release back, hourly timers on again |
 
 Run each from `harness/` with `AWS_PROFILE=bronto`, after `aws sso login --profile bronto`.
 `./night.sh status` shows which release is live and the timers.
+
+## Dashboards
+
+[`harness/dashboards/create_dashboards.py`](harness/dashboards/create_dashboards.py) builds two dashboards in the shared demo org, for the talk's live demo:
+
+- **Storefront × Atlas — checkout**: checkout latency and requests, the release running, the MongoDB calls under checkout, Atlas query targeting and CPU, and the mongod slow-query log. One time axis, top to bottom.
+- **Atlas — storefront (M10)**: Atlas's own Metrics-tab charts (opcounters, query targeting, op execution time, connections, CPU, memory, disk, network, replication lag, queues), from the OTel Metrics Sink.
+
+Atlas sends serverStatus counters as ever-growing gauges, and Bronto has no derivative function. So each counter is two queries per bucket, MAX and MIN, plus a formula for the difference. The script's docstring explains the details. One definition takes at most six queries, and a formula expression at most 100 characters.
+
+```bash
+BRONTO_API_KEY=... python3 harness/dashboards/create_dashboards.py --validate   # read-only dry run
+BRONTO_API_KEY=... python3 harness/dashboards/create_dashboards.py              # create
+BRONTO_API_KEY=... python3 harness/dashboards/create_dashboards.py --delete     # remove, from state.json
+```
+
+Creating needs a key with dashboard write access; the public read-only key is enough for `--validate`. The IDs of what it created are in `harness/dashboards/state.json`.
 
 ## Provisioned (5 October)
 
