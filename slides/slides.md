@@ -667,7 +667,7 @@ header name and the endpoint. The agent sets the endpoint from BRONTO_REGION.
 
 <div class="card">
 <b>What it can now see</b>
-<span>Bronto's MCP server: list datasets, search logs and traces in the shared org where Storefront runs. Its tools become the agent's tools.</span>
+<span>Bronto's MCP server: list datasets, search logs and traces in the shared org where Storefront runs. Not metrics, for now.</span>
 </div>
 
 <div class="card hl">
@@ -676,8 +676,8 @@ header name and the endpoint. The agent sets the endpoint from BRONTO_REGION.
 </div>
 
 <div class="card warn">
-<b>What it can't see</b>
-<span>Bronto MCP reads logs and traces, not metrics. Atlas's metrics are invisible to it, for now.</span>
+<b>Stuck? It says "install the Bronto MCP"</b>
+<span>It's still on step 2. <kbd>Ctrl-C</kbd> in terminal 1 and run the <code>AGENT_STEP=3</code> command: it should print <code>Step 3 agent running</code>. Still stuck? <code>docker pull ghcr.io/bronto-community/mongodb-lab-agent</code> and restart. Then ask: <b>"Use your Bronto tools: list the datasets, then search the shop-checkout traces from the last hour."</b></span>
 </div>
 
 </div>

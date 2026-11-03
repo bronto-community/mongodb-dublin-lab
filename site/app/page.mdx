@@ -63,8 +63,56 @@ EOF
 </Tab>
 </OSTabs>
 
-Another provider? Use `LLM_PROVIDER=openai` with `OPENAI_API_KEY`, `LLM_PROVIDER=anthropic` with `ANTHROPIC_API_KEY`,
-or `LLM_PROVIDER=bedrock` with your AWS credentials and `AWS_REGION`.
+**Another model provider?** Add two lines to `.env`: which provider, and its key. Everything else in the lab stays the
+same, and the traces look the same in Bronto.
+
+| Provider | `LLM_PROVIDER` | Key | Default model (`MODEL_ID` to change it) |
+|---|---|---|---|
+| Google Gemini (the default) | `gemini` | `GEMINI_API_KEY` | `gemini-3.8-flash` |
+| OpenAI | `openai` | `OPENAI_API_KEY` | `gpt-5.4-mini` |
+| Anthropic | `anthropic` | `ANTHROPIC_API_KEY` | `claude-haiku-4-5-20251001` |
+| Amazon Bedrock | `bedrock` | your AWS credentials and `AWS_REGION` | `global.amazon.nova-2-lite-v1:0` |
+
+<OSTabs>
+<Tab label="macOS / Linux">
+
+```bash
+# OpenAI
+cat >> .env <<'EOF'
+LLM_PROVIDER=openai
+OPENAI_API_KEY=YOUR-OPENAI-KEY
+EOF
+
+# or Anthropic
+cat >> .env <<'EOF'
+LLM_PROVIDER=anthropic
+ANTHROPIC_API_KEY=YOUR-ANTHROPIC-KEY
+EOF
+```
+
+</Tab>
+<Tab label="Windows (PowerShell)">
+
+```powershell
+# OpenAI
+@"
+LLM_PROVIDER=openai
+OPENAI_API_KEY=YOUR-OPENAI-KEY
+"@ | Add-Content -Encoding ascii .env
+
+# or Anthropic
+@"
+LLM_PROVIDER=anthropic
+ANTHROPIC_API_KEY=YOUR-ANTHROPIC-KEY
+"@ | Add-Content -Encoding ascii .env
+```
+
+</Tab>
+</OSTabs>
+
+You can switch at any step, for example when Gemini's free tier runs out. Open `.env` in an editor, keep one
+`LLM_PROVIDER` line and its key, then `Ctrl-C` in terminal 1 and run the same `docker run` command again. Leaving
+`GEMINI_API_KEY` in the file is fine.
 
 </Step>
 <Step n={3} title="Write your own rules into my.md" then="the folder has a my.md file.">
@@ -200,7 +248,16 @@ docker run --rm -e BRONTO_API_KEY=YOUR-API-KEY -e BRONTO_REGION=eu ghcr.io/bront
 ```
 
 It prints a link to "AI SRE agent — MongoDB Dublin lab": questions, answer time, tokens by model and step, tool calls
-and errors.
+and errors. To remove it again, run the same command with `-v "$PWD:/state"` added before the image name, and `python
+dashboard.py --delete` at the end (the first run needs the same `-v` too, so the script can remember what it created).
+
+**What it needs:** only Docker and that API key; the script is in the lab image. To run it without Docker, you need
+Python 3.9 or newer and nothing else (it uses only the standard library):
+
+```bash
+curl -O https://raw.githubusercontent.com/bronto-community/mongodb-dublin-lab/main/agent/dashboard.py
+BRONTO_API_KEY=YOUR-API-KEY BRONTO_REGION=eu python3 dashboard.py
+```
 
 </Step>
 </Steps>
@@ -222,13 +279,20 @@ BRONTO_API_KEY=13a79ead-d125-4f71-ab4d-c579119c7e1c.tUqIG3BTaonVJi_fdFldd8QjtfIc
 First **"What services do you know about?"**, then **"Anything wrong with checkout?"** Look at the trace in your Bronto:
 how many MCP tool calls did it make, and how many tokens did it use?
 
+**Stuck? It tells you to install the Bronto MCP server.** Then it's still running step 2:
+
+1. `Ctrl-C` in terminal 1 and run the `AGENT_STEP=3` command above. Terminal 1 should print `Step 3 agent running`.
+2. Still the same? Pull the latest image with `docker pull ghcr.io/bronto-community/mongodb-lab-agent`, and restart.
+3. Then ask: **"Use your Bronto tools: list the datasets, then search the shop-checkout traces from the last hour."**
+
 </Step>
 </Steps>
 
 ## Step 4: the database
 
-Bronto's MCP server reads logs and traces, not metrics. Step 4 gives the agent two tools that call Bronto's metrics API
-for the Atlas cluster's metrics, plus a few rules on how to investigate.
+Bronto's MCP server reads logs and traces, not metrics. Step 4 gives the agent three tools that call Bronto's metrics
+API for the Atlas cluster's metrics (one of them reads query targeting directly), plus a few rules on how to
+investigate.
 
 <Steps>
 <Step n={10} title="Teach it how you investigate" then="my.md has four more rules.">
